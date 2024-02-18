@@ -29,17 +29,12 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 
-#define _VERSION "18.02.2024"
-
-#define ColorToRGBA(x) D3DCOLOR_ARGB((uint8_t)(x.fCol[3] * 255), (uint8_t)(x.fCol[0] * 255), (uint8_t)(x.fCol[1] * 255), (uint8_t)(x.fCol[2] * 255))
+#define _VERSION "19.02.2024"
 
 #define ViewRenderOffset 0xC4
 #define GlobalVarsOffset 0x94
 #define ClientModeOffset 0x0
 #define InputOffset 0x0
-#define RandomSeedOffset 0x2
-
-#define StartMoviePattern "\x55\x8B\xEC\xA1\xCC\xCC\x81\xEC\xCC\xCC\xD9\x45\x18"
 
 #define PresentModule "gameoverlayrenderer64"
 #define PresentPattern "\xFF\x15????\x8B\xF8\xEB\x1E"
