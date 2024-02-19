@@ -89,10 +89,6 @@ namespace globals {
 
 	namespace lua {
 		namespace api {
-			// current script hooked by scripthook
-			// defined in 'lua.h' (seems to be broken)
-			// std::string script;
-
 			// is player getting screengrabbed (untested)
 			bool in_screenshot;
 		}

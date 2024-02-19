@@ -39,10 +39,6 @@ void main()
 	{
 		oRunStringEx = VMTHook<_RunStringEx>((PVOID**)Lua, (PVOID)hkRunStringEx, 111);
 	}
-	else
-	{
-		Lua = LuaShared->GetLuaInterface((unsigned char)LuaInterfaceType::LUA_MENU);
-	}
 	oCreateLuaInterfaceFn = VMTHook<_CreateLuaInterfaceFn>((PVOID**)LuaShared, (PVOID)hkCreateLuaInterfaceFn, 4);
 	oCloseLuaInterfaceFn = VMTHook<_CloseLuaInterfaceFn>((PVOID**)LuaShared, (PVOID)hkCloseInterfaceLuaFn, 5);
 
