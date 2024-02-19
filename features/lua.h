@@ -4,8 +4,6 @@
 
 #include "../headers/sdk/luajit.h"
 
-#include "../features/lua_api.h"
-
 #include <iostream>
 #include <fstream>
 #include <string>

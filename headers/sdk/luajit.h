@@ -22,8 +22,6 @@ struct lj_Debug {
 	int isvararg;
 };
 
-typedef int (*lua_Writer) (lua_State* L, const void* p, size_t sz, void* ud);
-
 #define IMPORTFUNC(ret, name, args, ...)	\
 	static std::uintptr_t find_##name() {	\
 		static std::uintptr_t funcAddr = reinterpret_cast<std::uintptr_t>(GetProcAddress(GetModuleHandleA("lua_shared.dll"), #name));	\
@@ -38,5 +36,6 @@ namespace luajit
 	IMPORTFUNC(int, lua_setfenv, (lua_State* state, int pos), state, pos);
 	IMPORTFUNC(int, luaL_loadbufferx, (lua_State* state, const char* buf, std::size_t size, const char* name, const char* mode), state, buf, size, name, mode);
 	IMPORTFUNC(int, lua_getinfo, (lua_State* state, const char* what, lj_Debug* ar), state, what, ar);
-	IMPORTFUNC(int, lua_dump, (lua_State* state, lua_Writer writer, void* data), state, writer, data);
+	IMPORTFUNC(char*, lua_tolstring, (lua_State* state, int idx, size_t* len), state, idx, len);
+	IMPORTFUNC(int, luaL_loadstring, (lua_State* state, const char* s), state, s);
 }
