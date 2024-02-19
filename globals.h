@@ -29,7 +29,7 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 
-#define _VERSION "19.02.2024"
+#define _VERSION "20.02.2024"
 
 #define ViewRenderOffset 0xC4
 #define GlobalVarsOffset 0x94
@@ -60,7 +60,7 @@ VPanelWrapper* PanelWrapper;
 
 void* EngineVGui;
 
-char* startMovie;
+void* HTTP;
 
 char* present;
 _Present oPresent;
