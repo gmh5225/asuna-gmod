@@ -7,24 +7,10 @@
 #include "../headers/sdk/luajit.h"
 
 namespace lua_api {
-	LUA_FUNCTION(load_bytecode) // doesnt' seem to work?
+	// doesnt' seem to work?
+	LUA_FUNCTION(load_bytecode)
 	{
-		LUA->CheckString(1);
-
-		const char* buf = LUA->GetString();
-		int ptr = luajit::call_luaL_loadbufferx(LUA->GetLuaState(), buf, sizeof(buf), "loaded bytecode", NULL);
-
-		if (ptr != 0)
-		{
-			logger::AddLog("[error] luaL_loadbufferx @ failed");
-			return 0;
-		}
-
-		LUA->Push(1);
-
-		logger::AddLog("[debug] luaL_loadbufferx @ returning value...");
-
-		return 1;
+		return 0;
 	}
 
 	LUA_FUNCTION(log)
@@ -102,6 +88,50 @@ namespace lua_api {
 	LUA_FUNCTION(in_screenshot)
 	{
 		LUA->PushBool(globals::lua::api::in_screenshot); // doesnt' seem to work?
+
+		return 1;
+	}
+
+	LUA_FUNCTION(change_name)
+	{
+		LUA->CheckString(1);
+
+		const char* name = LUA->GetString(1);
+		static uint8_t packet[256 + 2 + sizeof(name)];
+
+		CNetChan* netchannel = EngineClient->GetNetChannelInfo();
+		bf_write write;
+		write.StartWriting(packet, sizeof(packet));
+		write.WriteUInt(static_cast<uint32_t>(NetMessage::net_SetConVar), NET_MESSAGE_BITS);
+		write.WriteByte(1);
+		write.WriteString("name");
+		write.WriteString(name);
+
+		netchannel->SendData(&write, true);
+
+		LUA->PushBool(true);
+
+		return 1;
+	}
+
+	LUA_FUNCTION(custom_disconnect)
+	{
+		LUA->CheckString(1);
+
+		const char* reason = LUA->GetString(1);
+		static uint8_t packet[256 + 2 + sizeof(reason)];
+
+		CNetChan* netchannel = EngineClient->GetNetChannelInfo();
+		bf_write write;
+		write.StartWriting(packet, sizeof(packet));
+		write.WriteUInt(static_cast<uint32_t>(NetMessage::net_Disconnect), NET_MESSAGE_BITS);
+		write.WriteByte(1);
+		write.WriteString(reason);
+
+		netchannel->SendData(&write, true);
+		netchannel->Transmit(false);
+
+		LUA->PushBool(true);
 
 		return 1;
 	}
@@ -212,6 +242,14 @@ namespace lua_api {
 				// 'render.Capture' or has screenshot (untested)
 				Lua->PushCFunction(in_screenshot);
 				Lua->SetField(-2, "in_screenshot");
+
+				// changes name thru netchannel programatically
+				Lua->PushCFunction(change_name);
+				Lua->SetField(-2, "change_name");
+
+				// disconnects localplayer with custom reason
+				Lua->PushCFunction(custom_disconnect);
+				Lua->SetField(-2, "custom_disconnect");
 			}
 			else
 			{
