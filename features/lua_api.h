@@ -341,7 +341,7 @@ namespace lua_api {
 					Lua->PushNumber(info.filesdownloaded);
 					Lua->SetField(-2, "filesdownloaded");
 				}
-				Lua->SetField(-2, "playerinfo_s");
+				Lua->SetField(-2, "player_info_s");
 
 				//
 				Lua->CreateTable();
