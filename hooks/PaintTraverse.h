@@ -25,26 +25,24 @@ void __fastcall hkPaintTraverse(VPanelWrapper* _this, VPanel* panel, bool force_
 		{
 			const std::string& script = globals::lua::queue.top();
 
-			luajit::call_luaL_loadbufferx(Lua->GetLuaState(), script.c_str(), script.length(), "test", NULL);
-
-			if (Lua->IsType(-1, LuaObjectType::FUNCTION))
-			{
-				lua_api::init(globals::lua::state);
-
-				if (Lua->PCall(0, 0, 0))
-				{
-					std::string error = Lua->GetString(-1);
-					logger::AddLog("[error] execution error: %s\n", error.c_str());
-
-					Lua->Pop();
-				}
-			}
-			else
+			if (luajit::call_luaL_loadbufferx(Lua->GetLuaState(), script.c_str(), script.length(), RandomString(16).c_str(), NULL))
 			{
 				std::string error = Lua->GetString(-1);
-				logger::AddLog("[error] syntax error: %s\n", error.c_str());
-
 				Lua->Pop();
+
+				logger::AddLog("[error] syntax error: %s\n", error.c_str());
+			}
+
+			lua_api::init();
+
+			int code = reinterpret_cast<int>(Lua->PCall(0, 0, 0));
+
+			if (code)
+			{
+				std::string error = Lua->GetString(-1);
+				Lua->Pop();
+
+				logger::AddLog("[error] execution error: %s (%d)\n", error.c_str(), code);
 			}
 
 			globals::lua::queue.pop();
