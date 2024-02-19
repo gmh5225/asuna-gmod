@@ -101,7 +101,12 @@ fs::path SanitizePath(std::string pathstr)
 
 void RunScript(std::string input)
 {
-	if (!Lua) return;
+	Lua = LuaShared->GetLuaInterface((unsigned char)LuaInterfaceType::LUA_MENU);
+	
+	if (EngineClient->IsInGame())
+	{
+		Lua = LuaShared->GetLuaInterface((unsigned char)LuaInterfaceType::LUA_CLIENT);
+	}
 
 	globals::lua::mutex.lock();
 	globals::lua::queue.push(input);
@@ -122,7 +127,7 @@ void SaveScript(std::string fileName, std::string fileContent)
 		}
 		else
 		{
-			serverName = "loopback";
+			serverName = "menustate";
 		}
 
 		std::replace(serverName.begin(), serverName.end(), '.', '-');
@@ -138,17 +143,15 @@ void SaveScript(std::string fileName, std::string fileContent)
 		{
 			fs::create_directories(path.parent_path());
 		}
-		catch (const fs::filesystem_error& ex)
+		catch (...)
 		{
-			printf("[!] %s", ex.what());
 		}
 
 		auto of = std::ofstream(path, settings::lua::scripthook::dumpMode);
 		of << fileContent;
 		of.close();
 	}
-	catch (std::exception ex)
+	catch (...)
 	{
-		printf("[!] %s\n", ex.what());
 	}
 }
