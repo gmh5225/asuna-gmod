@@ -3,8 +3,14 @@
 #include "../globals.h"
 
 #include "../features/gui/gui.h"
+#include "../features/lua.h"
 
 #include "../headers/sdk/luajit.h"
+
+#include <fstream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 namespace lua_api {
 	// doesnt' seem to work?
@@ -92,6 +98,54 @@ namespace lua_api {
 		return 1;
 	}
 
+	LUA_FUNCTION(is_in_game)
+	{
+		LUA->PushBool(EngineClient->IsInGame());
+
+		return 1;
+	}
+
+	LUA_FUNCTION(get_local_player)
+	{
+		LUA->PushBool(EngineClient->GetLocalPlayer());
+
+		return 1;
+	}
+
+	LUA_FUNCTION(get_view_angles)
+	{
+		QAngle viewAngles;
+
+		EngineClient->GetViewAngles(viewAngles);
+
+		LUA->CreateTable();
+		{
+			LUA->PushNumber(viewAngles.x);
+			LUA->SetField(-2, "x");
+
+			LUA->PushNumber(viewAngles.y);
+			LUA->SetField(-2, "y");
+
+			LUA->PushNumber(viewAngles.z);
+			LUA->SetField(-2, "z");
+		}
+
+		return 1;
+	}
+
+	LUA_FUNCTION(set_view_angles)
+	{
+		LUA->CheckNumber(1);
+		LUA->CheckNumber(2);
+		
+		// x, y
+		QAngle viewAngles{ (vec_t)LUA->GetNumber(1), (vec_t)LUA->GetNumber(2), 0.f };
+
+		EngineClient->SetViewAngles(viewAngles);
+		
+		return 0;
+	}
+
 	LUA_FUNCTION(change_name)
 	{
 		LUA->CheckString(1);
@@ -136,7 +190,66 @@ namespace lua_api {
 		return 1;
 	}
 
-	void init(int state) {
+	LUA_FUNCTION(exploit_sourcenet)
+	{
+		int data[23] = { 0, 83, 101, 110, 100, 83, 101, 114, 118, 101, 114, 77, 97, 112, 67, 121, 99, 108, 101, 0, 8, 8, 0 };
+		static uint8_t packet[256 + 2 + sizeof(data)];
+
+		CNetChan* netchannel = EngineClient->GetNetChannelInfo();
+		bf_write write;
+		write.StartWriting(packet, sizeof(packet));
+		write.WriteUInt(static_cast<uint32_t>(NetMessage::clc_CmdKeyValues), NET_MESSAGE_BITS);
+		write.WriteLong(22);
+
+		for (int i = 0; i < 23; i++)
+		{
+			write.WriteChar(data[i]);
+		}
+
+		netchannel->SendData(&write, true);
+		netchannel->Transmit(false);
+
+		LUA->PushBool(true);
+
+		return 1;
+	}
+
+	// FIXME: i don't know why it doesn't work
+	//		  and i don't want to deal with it now
+	// 
+	// 11:40 PM / 19.02.2024 / shockpast
+	LUA_FUNCTION(load_script)
+	{
+		LUA->CheckString(1);
+
+		std::string pathName("C:\\asuna\\lua\\");
+		std::string fileName(LUA->GetString(1));
+		std::string rootPath = pathName + fileName;
+		
+		logger::AddLog("[debug] %s", rootPath.c_str());
+
+		if (!fs::exists(rootPath.c_str()))
+		{
+			logger::AddLog("[warning] %s doesn't exist!", fileName);
+			return 0;
+		}
+
+		std::ifstream file(rootPath.c_str());
+		std::string content((std::istreambuf_iterator<char>(file)),
+							(std::istreambuf_iterator<char>()));
+		if (content.length() <= 0)
+		{
+			logger::AddLog("[warning] %s is empty!", fileName);
+			return 0;
+		}
+
+		RunScript(content);
+
+		return 0;
+	}
+
+	void init()
+	{
 		// _ENV
 		Lua->CreateTable();
 
@@ -151,17 +264,21 @@ namespace lua_api {
 		// asuna table
 		Lua->CreateTable();
 		{
-			if (state == (int)LuaInterfaceType::LUA_CLIENT)
+			// asuna - logger
+			// [debug], [warning], [error]
+			Lua->PushCFunction(log);
+			Lua->SetField(-2, "log");
+
+			// unrestricted clientcmd for lua
+			Lua->PushCFunction(clientcmd);
+			Lua->SetField(-2, "clientcmd");
+
+			// returns true if player currently in game
+			Lua->PushCFunction(is_in_game);
+			Lua->SetField(-2, "is_in_game");
+
+			if (EngineClient->IsInGame())
 			{
-				// lua bytecode loader
-				Lua->PushCFunction(load_bytecode);
-				Lua->SetField(-2, "load_bytecode");
-
-				// asuna - logger
-				// [debug], [warning], [error]
-				Lua->PushCFunction(log);
-				Lua->SetField(-2, "log");
-
 				// globalvars from [C] to Lua
 				Lua->CreateTable();
 				{
@@ -226,6 +343,16 @@ namespace lua_api {
 				}
 				Lua->SetField(-2, "playerinfo_s");
 
+				//
+				Lua->CreateTable();
+				{
+					// lags client movement, only visual (uneffective)
+					// previously it could crash some servers
+					Lua->PushCFunction(exploit_sourcenet);
+					Lua->SetField(-2, "sourcenet");
+				}
+				Lua->SetField(-2, "exploits");
+
 				// playerinfo_s targetted on someone
 				Lua->PushCFunction(get_player_info_s);
 				Lua->SetField(-2, "get_player_info_s");
@@ -234,13 +361,9 @@ namespace lua_api {
 				Lua->PushCFunction(get_latency);
 				Lua->SetField(-2, "get_latency"); // requires flow to be known
 
-				// unrestricted clientcmd for lua
-				Lua->PushCFunction(clientcmd);
-				Lua->SetField(-2, "clientcmd");
-
 				// returns true if current frame inside
-				// 'render.Capture' or has screenshot (untested)
-				Lua->PushCFunction(in_screenshot);
+				// 'render.Capture' or has screenshot
+				Lua->PushCFunction(in_screenshot); // always returns false
 				Lua->SetField(-2, "in_screenshot");
 
 				// changes name thru netchannel programatically
@@ -250,13 +373,18 @@ namespace lua_api {
 				// disconnects localplayer with custom reason
 				Lua->PushCFunction(custom_disconnect);
 				Lua->SetField(-2, "custom_disconnect");
-			}
-			else
-			{
-				// asuna - logger
-				// [debug], [warning], [error]
-				Lua->PushCFunction(log);
-				Lua->SetField(-2, "log");
+
+				// retrieves localplayer from engine interface
+				Lua->PushCFunction(get_local_player);
+				Lua->SetField(-2, "get_local_player");
+
+				// retrieves viewangles of localplayer from engine interface
+				Lua->PushCFunction(get_view_angles);
+				Lua->SetField(-2, "get_view_angles");
+
+				// sets (x, y) for viewangles of localplayer
+				Lua->PushCFunction(set_view_angles);
+				Lua->SetField(-2, "set_view_angles");
 			}
 		}
 		Lua->SetField(-2, "asuna");
