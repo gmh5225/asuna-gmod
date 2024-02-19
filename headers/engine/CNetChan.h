@@ -3,6 +3,8 @@
 #include "../client/CViewSetup.h"
 #include "inetmessage.h"
 
+#define NET_MESSAGE_BITS 6
+
 enum class NetMessage {
 	net_NOP = 0,
 	net_Disconnect = 1,
@@ -198,26 +200,4 @@ public:
 	virtual void		GetRemoteFramerate(float* pflFrameTime, float* pflFrameTimeStdDeviation) const = 0;
 
 	virtual float		GetTimeoutSeconds() const = 0;
-};
-
-class NetMessageWriteable : public INetMessage {
-public:
-	bf_write write;
-	NetMessage type;
-
-public:
-	NetMessageWriteable(NetMessage msgType, uint8_t* buffer, int bufferSize) : type(msgType) {
-		write.StartWriting(buffer, bufferSize);
-	}
-
-	virtual int GetType() const { return static_cast<int>(type); }
-	virtual const char* GetName(void) const { return ":)"; }
-	virtual const char* ToString(void) const { return ":)"; }
-
-	virtual bool WriteToBuffer(bf_write& buffer) {
-		buffer.WriteBits(write.m_pData, write.m_iCurBit);
-		return true;
-	}
-
-	virtual bool ReadFromBuffer(bf_read& buffer) { return false; }
 };
