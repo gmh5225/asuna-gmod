@@ -258,6 +258,7 @@
   <ItemGroup>
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
+    <None Include="API.md" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>

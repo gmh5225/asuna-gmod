@@ -358,6 +358,7 @@
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
     <None Include="README.md" />
+    <None Include="API.md" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="LICENSE.txt" />
