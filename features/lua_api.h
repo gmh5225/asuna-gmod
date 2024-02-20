@@ -107,7 +107,7 @@ namespace lua_api {
 
 	LUA_FUNCTION(get_local_player)
 	{
-		LUA->PushBool(EngineClient->GetLocalPlayer());
+		LUA->PushNumber(EngineClient->GetLocalPlayer());
 
 		return 1;
 	}
