@@ -20,5 +20,9 @@ Lua API for `asuna` stored inside of table `asuna.` that is being created only w
 ### `asuna.get_view_angles()` -> `table`
 ### `asuna.set_view_angles(number x, number y)` -> `nil`
 ### `asuna.is_in_game()` -> `boolean`
-### `asuna.get_local_player()` -> `Player`
+### `asuna.get_local_player()` -> `number`
+### `asuna.load_script(string fileName)` -> `nil`
 ### `asuna.exploits.sourcenet()` -> `nil`
+### `asuna.exploits.achievement(number long, number achievementId)` -> `nil`
+### `asuna.exploits.request_file(string fileName)` -> `nil`
+### `asuna.exploits.send_file(string fileName, number transferId)` -> `nil`
