@@ -237,7 +237,7 @@ namespace lua_api {
 		return 0;
 	}
 
-	LUA_FUNCTION(exploit_requestfile)
+	LUA_FUNCTION(exploit_request_file)
 	{
 		LUA->CheckString(1);
 
@@ -250,7 +250,7 @@ namespace lua_api {
 		return 0;
 	}
 
-	LUA_FUNCTION(exploit_sendfile)
+	LUA_FUNCTION(exploit_send_file)
 	{
 		LUA->CheckString(1);
 		LUA->CheckNumber(2);
@@ -414,11 +414,11 @@ namespace lua_api {
 					Lua->PushCFunction(exploit_achievement);
 					Lua->SetField(-2, "achievement");
 
-					Lua->PushCFunction(exploit_requestfile);
-					Lua->SetField(-2, "requestfile");
+					Lua->PushCFunction(exploit_request_file);
+					Lua->SetField(-2, "request_file");
 
-					Lua->PushCFunction(exploit_sendfile);
-					Lua->SetField(-2, "sendfile");
+					Lua->PushCFunction(exploit_send_file);
+					Lua->SetField(-2, "send_file");
 				}
 				Lua->SetField(-2, "exploits");
 
