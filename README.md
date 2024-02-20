@@ -4,7 +4,7 @@ Asuna is [gluasteal](https://github.com/lewisclark/glua-steal) and [GMOD-SDK](ht
 It works only on `x64` since `x86` is getting updates very lately and slowly, and it's just... feels outdated?
 
 ## Usage
-- Compile `x64` in `Release` *(or download from releases)*
+- Compile `x64` in `Release` *(or download from [releases](https://github.com/shockpast/asuna-gmod/releases/latest))*
 - Inject `asuna-gmod.dll` using any injector *([recommendation](https://processhacker.sourceforge.io/))*
 - Press `INSERT` to open the menu.
 
