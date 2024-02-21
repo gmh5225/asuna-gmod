@@ -22,7 +22,13 @@ Lua API for `asuna` stored inside of table `asuna.` that is being created only w
 ### `asuna.is_in_game()` -> `boolean`
 ### `asuna.get_local_player()` -> `number`
 ### `asuna.load_script(string fileName)` -> `nil`
+### `asuna.get_convar(string name)` -> `table`
+### `asuna.set_convar(string name, number value)` -> `nil`
+### `asuna.set_convar_string(string name, string value)` -> `nil`
 ### `asuna.exploits.sourcenet()` -> `nil`
 ### `asuna.exploits.achievement(number long, number achievementId)` -> `nil`
 ### `asuna.exploits.request_file(string fileName)` -> `nil`
 ### `asuna.exploits.send_file(string fileName, number transferId)` -> `nil`
+### `asuna.exploits.srv_message(string message)` -> `nil`
+### `asuna.exploits.clientinfo()` -> `nil`
+### `asuna.exploits.listenevents()` -> `nil`
