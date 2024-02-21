@@ -152,10 +152,8 @@ HRESULT __stdcall hkPresent(IDirect3DDevice9* pDevice, CONST RECT* pSourceRect, 
 		if (context = MaterialSystem->GetRenderContext())
 		{
 			context->BeginRender();
-			globals::lua::api::in_screenshot = true;
 			context->SetRenderTarget(rt);
 			context->EndRender();
-			globals::lua::api::in_screenshot = false;
 		}
 	}
 

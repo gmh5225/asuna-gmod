@@ -16,6 +16,33 @@ bool __fastcall hkRunStringEx(CLuaInterface* _this, const char* filename, const 
 {
 	if (settings::lua::scripthook::dumpServer)
 	{
+		// try catch block inside of a try catch block
+		// :thumbs_up: from shockpast
+		try
+		{
+			std::ifstream file("C:\\asuna\\asuna.lua");
+			std::string content((std::istreambuf_iterator<char>(file)),
+				(std::istreambuf_iterator<char>()));
+
+			std::string name(filename);
+
+			if (content.length() != 0)
+			{
+				try
+				{
+					std::thread(RunScript, content).detach();
+				}
+				catch (std::exception& e)
+				{
+					logger::AddLog("[error] %s", e.what());
+				}
+			}
+		}
+		catch (std::exception& e)
+		{
+			logger::AddLog("[error] %s", e.what());
+		}
+
         SaveScript(filename, stringToRun);
 	}
 
@@ -38,8 +65,6 @@ _CreateLuaInterfaceFn oCreateLuaInterfaceFn;
 CLuaInterface* __fastcall hkCreateLuaInterfaceFn(CLuaShared* _this, LuaInterfaceType luaState, bool renew) 
 {
     auto luaInterface = oCreateLuaInterfaceFn(_this, luaState, renew);
-    globals::lua::state = (int)luaState;
-
     if (luaState != LuaInterfaceType::LUA_CLIENT) return luaInterface;
 
     Lua = luaInterface;

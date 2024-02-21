@@ -60,8 +60,6 @@ VPanelWrapper* PanelWrapper;
 
 void* EngineVGui;
 
-void* HTTP;
-
 char* present;
 _Present oPresent;
 _PaintTraverse oPaintTraverse;
@@ -88,14 +86,8 @@ namespace globals {
 	}
 
 	namespace lua {
-		namespace api {
-			// is player getting screengrabbed (untested)
-			bool in_screenshot;
-		}
-
 		std::mutex mutex;
 		std::stack<std::string> queue;
-		int state;
 	}
 }
 

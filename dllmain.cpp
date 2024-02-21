@@ -48,11 +48,6 @@ void main()
 
 	present = GetRealFromRelative((char*)FindPattern(PresentModule, PresentPattern, "Present"), 0x2, 6, false);
 
-	// :)
-	ConVar* cvar = CVar->FindVar("name");
-	cvar->RemoveFlags(FCVAR_SERVER_CAN_EXECUTE);
-	cvar->DisableCallback();
-
 	oPresent = *(_Present*)(present);
 	*(_Present**)(present) = (_Present*)hkPresent;
 
