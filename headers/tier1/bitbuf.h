@@ -6,9 +6,9 @@
 #include <string.h>
 
 namespace bitbuf {
-	extern uint32_t littleBits[32];
-	extern uint32_t bitWriteMasks[32][33];
-	extern uint32_t extraMasks[33];
+	uint32_t littleBits[32];
+	uint32_t bitWriteMasks[32][33];
+	uint32_t extraMasks[33];
 }
 
 class bf_write {
