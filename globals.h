@@ -27,7 +27,6 @@
 #include "headers/vguimatsurface/CMatSystemSurface.h"
 
 #include <d3d9.h>
-#include <d3dx9.h>
 
 #define _VERSION "22.02.2024"
 
